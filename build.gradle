@@ -1,0 +1,186 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+plugins {
+    id "java"
+    id "jvm-test-suite"
+
+    id "application"
+
+    id "jacoco"
+    id "jacoco-report-aggregation"
+
+        id "com.github.spotbugs" version "6.2.1"
+
+        id "pmd"
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion(17)
+    targetCompatibility = JavaVersion.toVersion(17)
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    //Production depencencies
+    implementation 'org.jsoup:jsoup:1.16.1'
+    implementation 'org.apache.poi:poi:5.2.3+'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3+'
+    implementation 'com.cedarsoftware:json-io:4.14.0'
+   
+
+    //Test Dependencies
+    testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
+    testImplementation "org.hamcrest:hamcrest-library:2.2"
+    
+}
+
+testing {
+    suites {
+        configureEach {
+            useJUnitJupiter()
+        }
+        test {
+            useJUnitJupiter()
+        }
+
+        integrationTest(JvmTestSuite) {
+            dependencies{
+            implementation project()
+            implementation "org.junit.jupiter:junit-jupiter:5.8.2"
+            implementation "org.hamcrest:hamcrest-library:2.2"
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        shouldRunAfter(test)
+                    }
+                }
+            }
+        }
+    }
+}
+
+test {
+    ignoreFailures = true
+
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+    }
+    finalizedBy jacocoTestReport
+}
+
+integrationTest {
+    ignoreFailures = true
+
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+    }
+    finalizedBy integrationTestCodeCoverageReport
+}
+
+javadoc {
+    failOnError = false
+}
+
+jacoco {
+    toolVersion = "0.8.13"
+}
+
+jacocoTestReport {
+    reports {
+        html.required = true
+    }
+}
+
+tasks.named("check") {
+    dependsOn(testing.suites.integrationTest)
+}
+
+application {
+    mainClass = 'edu.odu.cs.cs350.Driver'
+}
+
+spotbugs{
+    toolVersion ="4.9.3"
+}
+
+spotbugsTest{
+    enabled = false
+}
+
+spotbugsIntegrationTest{
+    enabled = false
+}
+
+pmd {
+    toolVersion = "7.0.0"
+
+    ignoreFailures = true
+    ruleSets = [
+        "category/java/bestpractices.xml",
+        "category/java/codestyle.xml",
+        "category/java/design.xml",
+        "category/java/errorprone.xml",
+        "category/java/performance.xml"
+    ]
+    
+}
+
+pmdTest {
+    enabled = false
+}
+
+pmdIntegrationTest{
+    enabled = false
+}
+
+// --------------------
+// Phase 4 Custom Tasks
+// --------------------
+
+tasks.register("customRun") {
+    group = "custom"
+    description = "Run the app using the Gradle Application Plugin"
+    dependsOn "run"
+}
+
+tasks.register("customJar") {
+    group = "custom"
+    description = "Build the JAR using Gradle"
+    dependsOn "jar"
+}
+
+tasks.register("customTest") {
+    group = "custom"
+    description = "Run all tests"
+    dependsOn "test"
+}
+
+tasks.register("customDocs") {
+    group = "custom"
+    description = "Generate JavaDocs"
+    dependsOn "javadoc"
+}
+
+tasks.register("customSpotbugs") {
+    group = "custom"
+    description = "Run SpotBugs analysis"
+    dependsOn "spotbugsMain"
+}
+
+tasks.register("customPmd") {
+    group = "custom"
+    description = "Run PMD analysis"
+    dependsOn "pmdMain"
+}
+spotbugsMain {
+    ignoreFailures = true
+}
